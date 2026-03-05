@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, Flag } from 'lucide-react';
 import { useVMData } from '../context/VMDataContext';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,9 @@ export function ProductScreen() {
   const { createRecord, loading } = useCompliance();
   const { log } = useAudit();
   const { showToast } = useToast();
+
+  const { state } = useLocation();
+  const readonly = (state as { readonly?: boolean } | null)?.readonly ?? false;
 
   const product = ean ? getProductByEAN(ean) : undefined;
 
@@ -64,31 +67,26 @@ export function ProductScreen() {
         <VMGuidelineCard product={product} />
 
         {/* Action buttons */}
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={handleConfirm}
-            disabled={loading}
-            className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-success text-white font-semibold text-[15px] active:opacity-90 transition-opacity disabled:opacity-60"
-          >
-            <CheckCircle size={18} />
-            {loading ? 'Saving...' : 'Confirm Match'}
-          </button>
+        {!readonly && (
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleConfirm}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-success text-white font-semibold text-[15px] active:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              <CheckCircle size={18} />
+              {loading ? 'Saving...' : 'Confirm Match'}
+            </button>
 
-          <button
-            onClick={() => navigate(`/flag/${ean}`)}
-            className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-danger text-white font-semibold text-[15px] active:opacity-90 transition-opacity"
-          >
-            <Flag size={18} />
-            Flag Issue
-          </button>
-
-          <button
-            onClick={() => navigate('/scan')}
-            className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-white border border-border-grey text-charcoal font-semibold text-[15px] active:bg-light-grey transition-colors"
-          >
-            Back
-          </button>
-        </div>
+            <button
+              onClick={() => navigate(`/flag/${ean}`)}
+              className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-danger text-white font-semibold text-[15px] active:opacity-90 transition-opacity"
+            >
+              <Flag size={18} />
+              Flag Issue
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

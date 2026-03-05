@@ -47,15 +47,7 @@ export function FlagScreen() {
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    // Upload photo
-    const tempId = `temp_${Date.now()}`;
-    const photoUrl = photo ? await uploadPhoto(photo, `compliance/${tempId}.jpg`) : null;
-    if (photo && !photoUrl) {
-      showToast('Failed to upload photo. Please try again.', 'error');
-      return;
-    }
-
-    // Create compliance record
+    // Create compliance record first to get the real ID
     const record = await createRecord({
       ean: product.ean13,
       orin_or_km: product.identifier,
@@ -64,7 +56,7 @@ export function FlagScreen() {
       department: product.department,
       campaign: product.campaign,
       status: 'non_compliant',
-      photo_url: photoUrl,
+      photo_url: null,
       guideline_image_url: product.vm_image,
       user_id: user.id,
       store_id: store.id,
@@ -75,10 +67,12 @@ export function FlagScreen() {
       return;
     }
 
-    // Rename the uploaded photo with the real record ID
-    const finalPhotoUrl = photo
-      ? await uploadPhoto(photo, `compliance/${record.id}.jpg`)
-      : null;
+    // Upload photo once using the real record ID
+    const photoUrl = photo ? await uploadPhoto(photo, `compliance/${record.id}.jpg`) : null;
+    if (photo && !photoUrl) {
+      showToast('Failed to upload photo. Please try again.', 'error');
+      return;
+    }
 
     await log('compliance', record.id, 'flagged', user.id);
 
@@ -90,7 +84,7 @@ export function FlagScreen() {
       non_compliance_type: ncType,
       severity,
       description: description.trim() || undefined,
-      flagged_photo_url: finalPhotoUrl ?? photoUrl,
+      flagged_photo_url: photoUrl,
       guideline_image_url: product.vm_image,
     });
 

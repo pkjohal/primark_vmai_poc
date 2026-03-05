@@ -65,7 +65,7 @@ export function ScanScreen() {
               {recentChecks.map(record => (
                 <div
                   key={record.id}
-                  onClick={() => navigate(`/product/${record.ean}`)}
+                  onClick={() => navigate(`/product/${record.ean}`, { state: { readonly: true } })}
                   className="flex items-center justify-between px-4 py-2.5 hover:bg-light-grey/50 cursor-pointer"
                 >
                   <div>
