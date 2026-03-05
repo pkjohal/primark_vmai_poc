@@ -22,10 +22,11 @@ export function VMDataProvider({ children }: { children: React.ReactNode }) {
         if (!r.ok) throw new Error('Failed to load VM product data');
         return r.json();
       })
-      .then((data: VMProduct[]) => {
-        setProducts(data);
+      .then((data: { products: VMProduct[] }) => {
+        const list = data.products ?? [];
+        setProducts(list);
         const map = new Map<string, VMProduct>();
-        data.forEach(p => map.set(p.ean13, p));
+        list.forEach(p => map.set(p.ean13, p));
         setEanMap(map);
       })
       .catch(e => setError(e.message))

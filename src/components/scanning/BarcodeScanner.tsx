@@ -33,6 +33,7 @@ export function BarcodeScanner({ onScan, onError }: Props) {
   const startedRef = useRef(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
+  const lastScanRef = useRef<{ ean: string; ts: number } | null>(null);
 
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [zoomSupported, setZoomSupported] = useState(false);
@@ -83,6 +84,10 @@ export function BarcodeScanner({ onScan, onError }: Props) {
           onError?.('Invalid barcode — please try again.');
           return;
         }
+        const now = Date.now();
+        const last = lastScanRef.current;
+        if (last && last.ean === decodedText && now - last.ts < 2000) return;
+        lastScanRef.current = { ean: decodedText, ts: now };
         playBeep();
         try { navigator.vibrate(80); } catch { /* not supported */ }
         onScan(decodedText);
