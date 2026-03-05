@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VM.ai POC — EAN-13 Barcodes</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f3f4f6;
+      padding: 24px;
+      color: #1a1f36;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #1a1f36;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .card canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .desc {
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      color: #1a1f36;
+      line-height: 1.3;
+    }
+    .meta {
+      font-size: 10px;
+      color: #6b7280;
+      text-align: center;
+    }
+    @media print {
+      body { background: #fff; padding: 10mm; }
+      .grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .card { box-shadow: none; border: 1px solid #e5e7eb; padding: 8px; }
+      h1, .subtitle { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h1>VM.ai POC — EAN-13 Barcodes</h1>
+  <p class="subtitle">All 98 products. Open browser print dialog (Ctrl+P / Cmd+P) to print on labels or A4.</p>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    // EAN-13 encoding tables
+    const L = ['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+    const G = ['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'];
+    const R = ['1110010','1100110','1101100','1000010','1011100','1001110','1010000','1000100','1001000','1110100'];
+
+    // Parity patterns for first digit (L=false, G=true)
+    const PARITY = [
+      [false,false,false,false,false,false], // 0
+      [false,false,true, false,true, true],  // 1
+      [false,false,true, true, false,true],  // 2
+      [false,false,true, true, true, false], // 3
+      [false,true, false,false,true, true],  // 4
+      [false,true, true, false,false,true],  // 5
+      [false,true, true, true, false,false], // 6
+      [false,true, false,true, false,true],  // 7
+      [false,true, false,true, true, false], // 8
+      [false,true, true, false,true, false], // 9
+    ];
+
+    function encodeEAN13(ean) {
+      const d = ean.split('').map(Number);
+      const first = d[0];
+      const parity = PARITY[first];
+      let bits = '101'; // left guard
+      for (let i = 0; i < 6; i++) {
+        bits += parity[i] ? G[d[i + 1]] : L[d[i + 1]];
+      }
+      bits += '01010'; // center guard
+      for (let i = 7; i < 13; i++) {
+        bits += R[d[i]];
+      }
+      bits += '101'; // right guard
+      return bits;
+    }
+
+    function drawBarcode(canvas, ean, description, identifier) {
+      const bits = encodeEAN13(ean);
+      const moduleWidth = 2;
+      const totalBars = bits.length; // 95
+      const quietZone = 10;
+      const barcodeWidth = totalBars * moduleWidth;
+      const width = barcodeWidth + quietZone * 2;
+      const height = 80;
+      const textHeight = 14;
+      const guardExtra = 5;
+
+      canvas.width = width;
+      canvas.height = height + textHeight;
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw bars
+      // Guards extend lower than data bars
+      const guardPositions = new Set();
+      // left guard: bits 0-2, center guard: bits 45-49, right guard: bits 92-94
+      for (let i = 0; i <= 2; i++) guardPositions.add(i);
+      for (let i = 45; i <= 49; i++) guardPositions.add(i);
+      for (let i = 92; i <= 94; i++) guardPositions.add(i);
+
+      for (let i = 0; i < bits.length; i++) {
+        if (bits[i] === '1') {
+          const x = quietZone + i * moduleWidth;
+          const isGuard = guardPositions.has(i);
+          const barHeight = isGuard ? height + guardExtra : height;
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(x, 0, moduleWidth, barHeight);
+        }
+      }
+
+      // Draw digit text below bars
+      ctx.fillStyle = '#000000';
+      ctx.font = `bold ${textHeight - 2}px monospace`;
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+
+      const digits = ean.split('');
+      // First digit left of left guard
+      ctx.fillText(digits[0], 1, height + 2);
+
+      // Left group: digits 1-6, centered over their bars (bits 3-44, 7 bits each)
+      for (let i = 0; i < 6; i++) {
+        const startBit = 3 + i * 7;
+        const x = quietZone + startBit * moduleWidth + (7 * moduleWidth) / 2;
+        ctx.textAlign = 'center';
+        ctx.fillText(digits[i + 1], x, height + 2);
+      }
+
+      // Right group: digits 7-12, centered over their bars (bits 50-91, 7 bits each)
+      for (let i = 0; i < 6; i++) {
+        const startBit = 50 + i * 7;
+        const x = quietZone + startBit * moduleWidth + (7 * moduleWidth) / 2;
+        ctx.textAlign = 'center';
+        ctx.fillText(digits[i + 7], x, height + 2);
+      }
+    }
+
+    const products = [
+      { ean: '5099301000012', desc: 'Cross Body Bag', id: 'ORIN 89977' },
+      { ean: '5099301000029', desc: 'Flapover Bag', id: 'ORIN 77198' },
+      { ean: '5099301000036', desc: 'Hardshell Suitcase', id: 'ORIN 03745' },
+      { ean: '5099301000043', desc: 'Belt', id: 'ORIN 64503' },
+      { ean: '5099301000050', desc: 'Baseball Cap', id: 'ORIN 11481' },
+      { ean: '5099301000067', desc: 'Sunglasses', id: 'ORIN 67346' },
+      { ean: '5099301000074', desc: 'Sunglasses', id: 'ORIN 66671' },
+      { ean: '5099301000081', desc: 'Sunglasses', id: 'ORIN 95602' },
+      { ean: '5099301000098', desc: '3pk 30 Denier Opaque Tights', id: 'ORIN 70878' },
+      { ean: '5099301000104', desc: '3pk 30 Denier Opaque Tights', id: 'ORIN 94443' },
+      { ean: '5099301000111', desc: '3pk 30 Denier Opaque Tights', id: 'ORIN 43808' },
+      { ean: '5099301000128', desc: '3pk 40 Denier Opaque Tights', id: 'ORIN 57041' },
+      { ean: '5099301000135', desc: '3pk 40 Denier Opaque Tights', id: 'ORIN 77853' },
+      { ean: '5099301000142', desc: '3pk 40 Denier Opaque Tights', id: 'ORIN 94444' },
+      { ean: '5099301000159', desc: '3pk 40 Denier Opaque Tights', id: 'ORIN 77058' },
+      { ean: '5099301000166', desc: '5pk Quarter Crew Socks', id: 'ORIN 35306' },
+      { ean: '5099301000173', desc: '5pk Quarter Crew Socks', id: 'ORIN 10784' },
+      { ean: '5099301000180', desc: '5pk Quarter Crew Socks', id: 'ORIN 08643' },
+      { ean: '5099301000197', desc: '5pk Quarter Crew Socks', id: 'ORIN 17430' },
+      { ean: '5099301000203', desc: '7pk Trainer Liners', id: 'ORIN 83240' },
+      { ean: '5099301000210', desc: '7pk Trainer Liners', id: 'ORIN 65813' },
+      { ean: '5099301000227', desc: '7pk Trainer Liners', id: 'ORIN 62658' },
+      { ean: '5099301000234', desc: '7pk Trainer Liners', id: 'ORIN 74439' },
+      { ean: '5099301000241', desc: '7pk Trainer Liners', id: 'ORIN 65648' },
+      { ean: '5099301000258', desc: '7pk Trainer Liners', id: 'ORIN 62650' },
+      { ean: '5099301000265', desc: '7pk Trainer Liners', id: 'ORIN 38784' },
+      { ean: '5099301000272', desc: '3pk Quarter Crew Socks', id: 'ORIN 62024' },
+      { ean: '5099301000289', desc: '3pk Quarter Crew Socks', id: 'ORIN 05785' },
+      { ean: '5099301000296', desc: '5pk Quarter Crew Socks', id: 'ORIN 84625' },
+      { ean: '5099301000302', desc: '5pk Quarter Crew Socks', id: 'ORIN 41172' },
+      { ean: '5099301000319', desc: '3pk Quarter Crew Socks', id: 'ORIN 50285' },
+      { ean: '5099301000326', desc: 'T-Shirt Bra', id: 'ORIN 92476' },
+      { ean: '5099301000333', desc: 'T-Shirt Bra', id: 'ORIN 88046' },
+      { ean: '5099301000340', desc: 'T-Shirt Bra', id: 'ORIN 87941' },
+      { ean: '5099301000357', desc: 'T-Shirt Bra', id: 'ORIN 73988' },
+      { ean: '5099301000364', desc: '3pk Seamfree Bra', id: 'ORIN 39080' },
+      { ean: '5099301000371', desc: '3pk Seamfree Bra', id: 'ORIN 36683' },
+      { ean: '5099301000388', desc: '5pk Short Sleeve Bodysuit', id: 'ORIN 95736' },
+      { ean: '5099301000395', desc: '5pk Short Sleeve Bodysuit', id: 'ORIN 45241' },
+      { ean: '5099301000401', desc: 'Leisure Set', id: 'ORIN 47848' },
+      { ean: '5099301000418', desc: 'Crew & Wide Leg Jogger Set', id: 'ORIN 73206' },
+      { ean: '5099301000425', desc: 'T-Shirt & Short Set', id: 'ORIN 54853' },
+      { ean: '5099301000432', desc: 'T-Shirt & Short Set', id: 'ORIN 72962' },
+      { ean: '5099301000449', desc: 'T-Shirt & Short Set', id: 'ORIN 30439' },
+      { ean: '5099301000456', desc: 'T-Shirt & Short Set', id: 'ORIN 45138' },
+      { ean: '5099301000463', desc: 'Crew Leisure Set', id: 'ORIN 57097' },
+      { ean: '5099301000470', desc: 'Hoodie Leisure Set', id: 'ORIN 57094' },
+      { ean: '5099301000487', desc: 'T-Shirt & Short Set', id: 'ORIN 87319' },
+      { ean: '5099301000494', desc: 'T-Shirt & Short Set', id: 'ORIN 88485' },
+      { ean: '5099301000500', desc: 'Crew Leisure Set', id: 'ORIN 79890' },
+      { ean: '5099301000517', desc: 'Hoodie Leisure Set', id: 'ORIN 74966' },
+      { ean: '5099301000524', desc: 'Ballerina Flats', id: 'ORIN 66362' },
+      { ean: '5099301000531', desc: 'Sandals', id: 'ORIN 84095' },
+      { ean: '5099301000548', desc: 'Woven Mules', id: 'ORIN 65734' },
+      { ean: '5099301000555', desc: 'Flip Flops', id: 'ORIN 98842' },
+      { ean: '5099301000562', desc: 'Sliders', id: 'ORIN 97469' },
+      { ean: '5099301000579', desc: '5pk Camis', id: 'ORIN 13294' },
+      { ean: '5099301000586', desc: '5pk Essential Tanks', id: 'ORIN 13482' },
+      { ean: '5099301000593', desc: '10pk Briefs', id: 'ORIN 51749' },
+      { ean: '5099301000609', desc: '10pk Briefs', id: 'ORIN 26825' },
+      { ean: '5099301000616', desc: '10pk Briefs', id: 'ORIN 27939' },
+      { ean: '5099301000623', desc: '10pk Briefs', id: 'ORIN 27852' },
+      { ean: '5099301000630', desc: '5pk Essential Tanks', id: 'ORIN 38412' },
+      { ean: '5099301000647', desc: '7pk Essential Trunks', id: 'ORIN 28428' },
+      { ean: '5099301000654', desc: '7pk Essential Trunks', id: 'ORIN 26128' },
+      { ean: '5099301000661', desc: '7pk Trunks', id: 'ORIN 46168' },
+      { ean: '5099301000678', desc: '3pk Hipster Briefs', id: 'ORIN 50667' },
+      { ean: '5099301000685', desc: '3pk Hipster Briefs', id: 'ORIN 45085' },
+      { ean: '5099301000692', desc: '3pk Hipster Briefs', id: 'ORIN 17662' },
+      { ean: '5099301000708', desc: '3pk Hipster Briefs', id: 'ORIN 45065' },
+      { ean: '5099301000715', desc: '3pk Essential Trunks', id: 'ORIN 14575' },
+      { ean: '5099301000722', desc: '3pk Essential Trunks', id: 'ORIN 23132' },
+      { ean: '5099301000739', desc: '3pk Essential Trunks', id: 'ORIN 24274' },
+      { ean: '5099301000746', desc: '3pk Essential Trunks', id: 'ORIN 45010' },
+      { ean: '5099301000753', desc: '3pk Woven Briefs', id: 'ORIN 22007' },
+      { ean: '5099301000760', desc: '3pk Woven Briefs', id: 'ORIN 32586' },
+      { ean: '5099301000777', desc: '3pk Woven Briefs', id: 'ORIN 63898' },
+      { ean: '5099301000784', desc: '3pk Woven Briefs', id: 'ORIN 59805' },
+      { ean: '5099301000791', desc: '3pk Woven Briefs', id: 'ORIN 28006' },
+      { ean: '5099301000807', desc: '5pk Essential Briefs', id: 'ORIN 62349' },
+      { ean: '5099301000814', desc: '5pk Essential Briefs', id: 'ORIN 38072' },
+      { ean: '5099301000821', desc: '5pk Essential Briefs', id: 'ORIN 36803' },
+      { ean: '5099301000838', desc: '3pk Sleeveless Vests', id: 'ORIN 81656' },
+      { ean: '5099301000845', desc: '5pk Formal Socks', id: 'ORIN 79316' },
+      { ean: '5099301000852', desc: '5pk Formal Socks', id: 'ORIN 03872' },
+      { ean: '5099301000869', desc: '5pk Sports Socks', id: 'ORIN 23088' },
+      { ean: '5099301000876', desc: '7pk Trainer Liners', id: 'ORIN 96775' },
+      { ean: '5099301000883', desc: '7pk Trainer Liners', id: 'ORIN 96664' },
+      { ean: '5099301000890', desc: '7pk Trainer Liners', id: 'ORIN 97233' },
+      { ean: '5099301001002', desc: 'Satin Finish Foundation', id: 'KM 91370' },
+      { ean: '5099301001019', desc: 'False Nails', id: 'KM 60201' },
+      { ean: '5099301001026', desc: 'Flutter Frenzy Mascara', id: 'KM 60344' },
+      { ean: '5099301001033', desc: 'Hydration Body Range', id: 'KM 29756' },
+      { ean: '5099301001040', desc: 'Eau de Parfum 50ml', id: 'KM 11354' },
+      { ean: '5099301001057', desc: "Men's Fragrance 50ml", id: 'KM 23148' },
+      { ean: '5099301001064', desc: 'Mini Nail Polish', id: 'KM 98655' },
+      { ean: '5099301001071', desc: 'Gel Effect Nail Polish', id: 'KM 72400' },
+      { ean: '5099301001088', desc: 'Dry Shampoo Powder', id: 'KM 20052' },
+    ];
+
+    const grid = document.getElementById('grid');
+
+    products.forEach(({ ean, desc, id }) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const canvas = document.createElement('canvas');
+      drawBarcode(canvas, ean, desc, id);
+      card.appendChild(canvas);
+
+      const descEl = document.createElement('div');
+      descEl.className = 'desc';
+      descEl.textContent = desc;
+      card.appendChild(descEl);
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'meta';
+      metaEl.textContent = id;
+      card.appendChild(metaEl);
+
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>

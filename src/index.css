@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Work+Sans:wght@300;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-light-grey text-navy;
+    overscroll-behavior: none;
+    margin: 0;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Hide html5-qrcode default UI chrome */
+#html5qr-scanner {
+  border: none !important;
+  padding: 0 !important;
+}
+
+#html5qr-scanner > img,
+#html5qr-scanner > div > img {
+  display: none !important;
+}
+
+/* Ensure the scanner video fills its container */
+#html5qr-scanner video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Safe area bottom for bottom nav on iOS */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.font-primark {
+  font-family: 'Work Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}

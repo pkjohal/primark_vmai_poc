@@ -1,0 +1,10 @@
+CREATE INDEX idx_compliance_store ON compliance_records(store_id, status);
+CREATE INDEX idx_compliance_user ON compliance_records(user_id);
+CREATE INDEX idx_compliance_checked ON compliance_records(checked_at);
+CREATE INDEX idx_compliance_ean ON compliance_records(ean);
+CREATE INDEX idx_tasks_store ON vm_tasks(store_id, status);
+CREATE INDEX idx_tasks_assigned ON vm_tasks(assigned_to, status);
+CREATE INDEX idx_tasks_severity ON vm_tasks(severity, status);
+CREATE INDEX idx_tasks_due ON vm_tasks(due_date);
+CREATE INDEX idx_audit_entity ON audit_log(entity_type, entity_id);
+CREATE INDEX idx_users_store ON users(store_id, is_active);

@@ -1,0 +1,110 @@
+import { useState, useRef, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { ScanBarcode, ClipboardList, BarChart3, Settings, LogOut, X, Menu } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+
+export function NavBar() {
+  const { user, store, logout, canViewTasks, canViewDashboard, canManageUsers } = useAuth();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  // Close menu on route change
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const navItems = [
+    { to: '/scan', icon: ScanBarcode, label: 'Scan' },
+    ...(canViewTasks ? [{ to: '/tasks', icon: ClipboardList, label: 'Tasks' }] : []),
+    ...(canViewDashboard ? [{ to: '/dashboard', icon: BarChart3, label: 'Dashboard' }] : []),
+    ...(canManageUsers ? [{ to: '/admin', icon: Settings, label: 'Admin' }] : []),
+  ];
+
+  return (
+    <>
+      <header className="bg-navy h-14 flex items-center justify-between px-4 flex-shrink-0 sticky top-0 z-40">
+        <div>
+          <span className="font-primark text-primark-blue uppercase" style={{ fontSize: '20px', letterSpacing: '0.2em' }}>PRIMARK</span>
+          <span className="text-mid-grey text-sm ml-2">VM.ai</span>
+        </div>
+        <button
+          onClick={() => setOpen(v => !v)}
+          className="text-white p-1.5 hover:text-primark-blue transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu size={22} />
+        </button>
+      </header>
+
+      {/* Backdrop */}
+      {open && (
+        <div className="fixed inset-0 bg-black/40 z-40" />
+      )}
+
+      {/* Slide-in drawer */}
+      <div
+        ref={menuRef}
+        className={`fixed top-0 right-0 h-full w-72 bg-navy z-50 flex flex-col shadow-2xl transition-transform duration-250 ease-in-out ${
+          open ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Drawer header */}
+        <div className="h-14 flex items-center justify-between px-4 border-b border-white/10 flex-shrink-0">
+          <div>
+            <p className="text-white text-sm font-semibold leading-tight">{user?.name}</p>
+            <p className="text-mid-grey text-xs leading-tight">{store?.name}</p>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            className="text-mid-grey hover:text-white transition-colors p-1.5"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
+          {navItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primark-blue/20 text-primark-blue'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`
+              }
+            >
+              <item.icon size={18} />
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Logout */}
+        <div className="px-3 pb-8 border-t border-white/10 pt-3 flex-shrink-0">
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <LogOut size={18} />
+            Log out
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
