@@ -54,19 +54,18 @@ export function ProductScreen() {
   };
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full md:max-w-4xl md:mx-auto md:w-full md:px-6 md:py-4">
       {/* Back button */}
-      <div className="px-4 pt-4 pb-2 flex-shrink-0">
+      <div className="px-4 pt-4 pb-2 flex-shrink-0 md:px-0">
         <button onClick={() => navigate('/scan')} className="flex items-center gap-1.5 text-primark-blue font-medium text-sm">
           <ArrowLeft size={16} />
           Back to Scanner
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-4 md:px-0">
         <VMGuidelineCard product={product} />
 
-        {/* Action buttons */}
         {!readonly && (
           <div className="flex flex-col gap-3">
             <button
@@ -77,7 +76,6 @@ export function ProductScreen() {
               <CheckCircle size={18} />
               {loading ? 'Saving...' : 'Confirm Match'}
             </button>
-
             <button
               onClick={() => navigate(`/flag/${ean}`)}
               className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-danger text-white font-semibold text-[15px] active:opacity-90 transition-opacity"
