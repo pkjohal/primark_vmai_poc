@@ -43,21 +43,23 @@ export function ScanScreen() {
   const todayCount = recentChecks.filter(r => new Date(r.checked_at).toDateString() === today).length;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Scanner — 65% */}
-      <div className="flex-[1.86] relative min-h-0">
-        <BarcodeScanner onScan={handleScan} onError={handleError} />
+    <div className="flex flex-col h-full md:block md:h-auto md:max-w-4xl md:mx-auto md:px-6 md:py-6">
+      {/* Scanner — 65% on mobile, fixed-height box on desktop */}
+      <div className="flex-[1.86] relative min-h-0 md:flex-none">
+        <div className="h-full md:h-[480px] md:rounded-2xl md:overflow-hidden md:shadow-lg">
+          <BarcodeScanner onScan={handleScan} onError={handleError} />
+        </div>
       </div>
 
-      {/* Recent checks panel — 35% */}
-      <div className="bg-white rounded-t-2xl shadow-lg relative z-10 flex flex-col" style={{ minHeight: '35%', maxHeight: '40%' }}>
+      {/* Recent checks — slide-up panel on mobile, card on desktop */}
+      <div className="bg-white rounded-t-2xl shadow-lg relative z-10 flex flex-col min-h-[35%] max-h-[40%] md:min-h-0 md:max-h-none md:rounded-2xl md:shadow-sm md:mt-4">
         <div className="px-4 pt-4 pb-2 flex items-center justify-between flex-shrink-0">
           <h2 className="text-base font-semibold text-navy">Recent Checks</h2>
           <span className="text-[13px] font-medium uppercase tracking-wide text-mid-grey">
             Today: {todayCount}
           </span>
         </div>
-        <div className="overflow-y-auto flex-1 pb-2">
+        <div className="overflow-y-auto flex-1 pb-2 md:overflow-visible">
           {recentChecks.length === 0 ? (
             <EmptyState icon={ScanBarcode} message="Scan a product to check its VM display" />
           ) : (
