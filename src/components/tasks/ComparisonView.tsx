@@ -15,10 +15,10 @@ function ImageBox({ src, label }: { src: string | null; label: string }) {
         <img
           src={src}
           alt={label}
-          className="w-full h-48 object-cover rounded-xl bg-light-grey"
+          className="w-full object-contain rounded-xl bg-light-grey"
         />
       ) : (
-        <div className="w-full h-48 rounded-xl bg-light-grey flex items-center justify-center text-mid-grey text-sm">
+        <div className="w-full aspect-video rounded-xl bg-light-grey flex items-center justify-center text-mid-grey text-sm">
           No image
         </div>
       )}
@@ -30,7 +30,7 @@ export function ComparisonView({ guidelineImage, actualPhoto, guidelineLabel = '
   const guidelineSrc = guidelineImage ? resolveImagePath(guidelineImage) : null;
 
   return (
-    <div className="flex flex-row gap-3 sm:flex-col">
+    <div className="flex flex-col gap-3 sm:flex-row">
       <ImageBox src={guidelineSrc} label={guidelineLabel} />
       <ImageBox src={actualPhoto} label={actualLabel} />
     </div>

@@ -124,7 +124,7 @@ export function BarcodeScanner({ onScan, onError }: Props) {
 
   if (cameraError === 'permission') {
     return (
-      <div className="flex-1 bg-navy flex flex-col items-center justify-center gap-3 p-6 text-center">
+      <div className="w-full h-full bg-navy flex flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="text-white text-lg font-semibold">Camera Access Required</p>
         <p className="text-mid-grey text-sm">Please enable camera access in your device settings to scan barcodes.</p>
         <p className="text-mid-grey text-xs mt-2">iOS: Settings → Safari → Camera | Android: Settings → Apps → Browser → Permissions</p>
@@ -134,7 +134,7 @@ export function BarcodeScanner({ onScan, onError }: Props) {
 
   if (cameraError === 'no_camera' || cameraError === 'unavailable') {
     return (
-      <div className="flex-1 bg-navy flex flex-col items-center justify-center gap-3 p-6 text-center">
+      <div className="w-full h-full bg-navy flex flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="text-white text-lg font-semibold">No Camera Detected</p>
         <p className="text-mid-grey text-sm">This app requires a device with a rear camera.</p>
       </div>
@@ -142,7 +142,7 @@ export function BarcodeScanner({ onScan, onError }: Props) {
   }
 
   return (
-    <div className="relative flex-1 bg-black overflow-hidden">
+    <div className="relative w-full h-full bg-black overflow-hidden">
       {/* html5-qrcode target — Tailwind suppresses duplicate video/img chrome */}
       <div
         id={scannerId}

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { NavBar } from './components/layout/NavBar';
+import { BottomNav } from './components/layout/BottomNav';
 import { LoginScreen } from './screens/LoginScreen';
 import { ScanScreen } from './screens/ScanScreen';
 import { ProductScreen } from './screens/ProductScreen';
@@ -37,9 +38,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen bg-light-grey overflow-hidden">
       <NavBar />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-16">
         {children}
       </main>
+      <BottomNav />
     </div>
   );
 }

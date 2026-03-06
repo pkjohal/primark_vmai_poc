@@ -78,122 +78,127 @@ export function TaskDetailScreen() {
   };
 
   return (
-    <div className="flex flex-col min-h-full">
-      <div className="px-4 pt-4 pb-2 flex-shrink-0">
+    <div className="flex flex-col min-h-full md:max-w-4xl md:mx-auto md:w-full md:px-6 md:py-4">
+      <div className="px-4 pt-4 pb-2 flex-shrink-0 md:px-0">
         <button onClick={() => navigate('/tasks')} className="flex items-center gap-1.5 text-primark-blue font-medium text-sm">
           <ArrowLeft size={16} />
           Tasks
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-4">
-        {/* Image comparison */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <ComparisonView
-            guidelineImage={task.guideline_image_url}
-            actualPhoto={task.flagged_photo_url}
-          />
-          {task.status === 'completed' && task.evidence_photo_url && (
-            <div className="mt-3">
-              <ComparisonView
-                guidelineImage={task.flagged_photo_url}
-                actualPhoto={task.evidence_photo_url}
-                guidelineLabel="Before (Flagged)"
-                actualLabel="After (Fixed)"
+      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-4 md:px-0">
+        {/* Images */}
+        <div className="flex flex-col gap-4">
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <ComparisonView
+              guidelineImage={task.guideline_image_url}
+              actualPhoto={task.flagged_photo_url}
+            />
+            {task.status === 'completed' && task.evidence_photo_url && (
+              <div className="mt-3 pt-3 border-t border-border-grey">
+                <ComparisonView
+                  guidelineImage={task.flagged_photo_url}
+                  actualPhoto={task.evidence_photo_url}
+                  guidelineLabel="Before (Flagged)"
+                  actualLabel="After (Fixed)"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Details + actions */}
+        <div className="flex flex-col gap-4">
+          {/* Task details */}
+          <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-base font-semibold text-navy">{product?.product_description ?? 'Unknown product'}</h2>
+                <p className="text-sm text-mid-grey">{product?.orin_or_km}</p>
+              </div>
+              <SeverityBadge severity={task.severity} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Type</p>
+                <p className="text-charcoal">{NON_COMPLIANCE_LABELS[task.non_compliance_type]}</p>
+              </div>
+              <div>
+                <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Status</p>
+                <p className={`font-medium ${overdue ? 'text-danger' : 'text-charcoal'}`}>
+                  {task.status.replace('_', ' ')}
+                  {overdue && ' · OVERDUE'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Reporter</p>
+                <p className="text-charcoal">{task.reporter?.name ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Due</p>
+                <p className={overdue ? 'text-danger font-medium' : 'text-charcoal'}>
+                  {task.due_date ? formatDate(task.due_date) : '—'}
+                </p>
+              </div>
+            </div>
+
+            {task.description && (
+              <div>
+                <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Description</p>
+                <p className="text-charcoal text-sm mt-0.5">{task.description}</p>
+              </div>
+            )}
+
+            <p className="text-xs text-mid-grey">Flagged {formatDate(task.created_at)}</p>
+          </div>
+
+          {/* Evidence capture (shown when completing) */}
+          {showEvidenceCapture && (
+            <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-3">
+              <h3 className="text-base font-semibold text-navy">Evidence Photo Required</h3>
+              <p className="text-sm text-mid-grey">Take a photo showing the resolved display.</p>
+              <PhotoCapture
+                onCapture={f => setEvidenceFile(f)}
+                required
+                label="Take Evidence Photo"
               />
             </div>
           )}
-        </div>
 
-        {/* Task details */}
-        <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-base font-semibold text-navy">{product?.product_description ?? 'Unknown product'}</h2>
-              <p className="text-sm text-mid-grey">{product?.orin_or_km}</p>
-            </div>
-            <SeverityBadge severity={task.severity} />
+          {/* Actions */}
+          <div className="flex flex-col gap-3">
+            {task.status === 'open' && (
+              <button
+                onClick={handleStartWork}
+                className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-primark-blue text-white font-semibold text-[15px] active:opacity-90"
+              >
+                <Play size={16} />
+                Start Work
+              </button>
+            )}
+
+            {task.status === 'in_progress' && (
+              <button
+                onClick={handleMarkComplete}
+                disabled={uploading}
+                className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-success text-white font-semibold text-[15px] active:opacity-90 disabled:opacity-60"
+              >
+                <CheckCircle size={16} />
+                {uploading ? 'Uploading...' : evidenceFile ? 'Confirm Complete' : 'Mark Complete'}
+              </button>
+            )}
+
+            {task.status !== 'closed' && task.status !== 'completed' && (
+              <button
+                onClick={() => setShowCloseDialog(true)}
+                className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-white border border-border-grey text-charcoal font-semibold text-[15px] active:bg-light-grey"
+              >
+                <X size={16} />
+                Close Task
+              </button>
+            )}
           </div>
-
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Type</p>
-              <p className="text-charcoal">{NON_COMPLIANCE_LABELS[task.non_compliance_type]}</p>
-            </div>
-            <div>
-              <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Status</p>
-              <p className={`font-medium ${overdue ? 'text-danger' : 'text-charcoal'}`}>
-                {task.status.replace('_', ' ')}
-                {overdue && ' · OVERDUE'}
-              </p>
-            </div>
-            <div>
-              <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Reporter</p>
-              <p className="text-charcoal">{task.reporter?.name ?? '—'}</p>
-            </div>
-            <div>
-              <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Due</p>
-              <p className={overdue ? 'text-danger font-medium' : 'text-charcoal'}>
-                {task.due_date ? formatDate(task.due_date) : '—'}
-              </p>
-            </div>
-          </div>
-
-          {task.description && (
-            <div>
-              <p className="text-[13px] uppercase tracking-wide text-mid-grey font-medium">Description</p>
-              <p className="text-charcoal text-sm mt-0.5">{task.description}</p>
-            </div>
-          )}
-
-          <p className="text-xs text-mid-grey">Flagged {formatDate(task.created_at)}</p>
-        </div>
-
-        {/* Evidence capture (shown when completing) */}
-        {showEvidenceCapture && (
-          <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-3">
-            <h3 className="text-base font-semibold text-navy">Evidence Photo Required</h3>
-            <p className="text-sm text-mid-grey">Take a photo showing the resolved display.</p>
-            <PhotoCapture
-              onCapture={f => setEvidenceFile(f)}
-              required
-              label="Take Evidence Photo"
-            />
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex flex-col gap-3">
-          {task.status === 'open' && (
-            <button
-              onClick={handleStartWork}
-              className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-primark-blue text-white font-semibold text-[15px] active:opacity-90"
-            >
-              <Play size={16} />
-              Start Work
-            </button>
-          )}
-
-          {task.status === 'in_progress' && (
-            <button
-              onClick={handleMarkComplete}
-              disabled={uploading}
-              className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-success text-white font-semibold text-[15px] active:opacity-90 disabled:opacity-60"
-            >
-              <CheckCircle size={16} />
-              {uploading ? 'Uploading...' : evidenceFile ? 'Confirm Complete' : 'Mark Complete'}
-            </button>
-          )}
-
-          {task.status !== 'closed' && task.status !== 'completed' && (
-            <button
-              onClick={() => setShowCloseDialog(true)}
-              className="flex items-center justify-center gap-2 w-full min-h-[48px] rounded-xl bg-white border border-border-grey text-charcoal font-semibold text-[15px] active:bg-light-grey"
-            >
-              <X size={16} />
-              Close Task
-            </button>
-          )}
         </div>
       </div>
 
