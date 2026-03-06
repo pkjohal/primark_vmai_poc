@@ -33,7 +33,7 @@ export function BottomNav() {
             }`
           }
         >
-          <item.icon size={22} className="md:w-[18px] md:h-[18px]" />
+          <span className="flex-shrink-0 md:[&>svg]:w-[18px] md:[&>svg]:h-[18px]"><item.icon size={22} /></span>
           <span className="text-[11px] font-medium md:text-sm">{item.label}</span>
         </NavLink>
       ))}
