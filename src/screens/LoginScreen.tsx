@@ -5,6 +5,7 @@ import { useStores } from '../hooks/useStores';
 import { PinPad } from '../components/ui/PinPad';
 import { supabase } from '../lib/supabase';
 import type { Store, User } from '../lib/types';
+import { ROLE_LABELS } from '../lib/types';
 
 type Step = 'store' | 'user' | 'pin';
 
@@ -142,7 +143,7 @@ export function LoginScreen() {
               className="w-full border-2 border-border-grey rounded-xl px-4 py-3 text-[15px] text-charcoal focus:outline-none focus:border-primark-blue focus:ring-2 focus:ring-primark-blue/20 bg-white"
             >
               <option value="" disabled>Select your name...</option>
-              {storeUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {storeUsers.map(u => <option key={u.id} value={u.id}>{u.name} — {ROLE_LABELS[u.role]}</option>)}
             </select>
           </div>
         )}
